@@ -1,0 +1,62 @@
+* Assignment by Kostis
+Dear all
+
+ 
+
+I hope you are doing very well.
+
+I would like to ask you to do the following investigation and each of you whenever is ready to inform me, sending a presentation.
+
+    Select a modulating signal and a carrier signal, each one with a specific amplitude
+    Create a modulated signal using the modulating signal and the carrier frequency
+    Calculate mathematically which is the amplitude of the modulated signal in the time domain and in the frequency domain.
+    Demodulate the signal using the Hilbert transform. Calculate mathematically the amplitude of the demodulated signal in the time and the frequency domain.
+    Create a matlab script and repeat the steps below. Confirm that the amplitudes are correct based on the mathematical calculation
+
+ 
+
+Then:
+
+    Create a filter with a central frequency and a bandwidth, setting the carrier as the central frequency and a bandwidth that covers fully the modulations.
+    Apply the filter on the raw signal. Is the amplitude changed? Demodulate the filtered signal and check the amplitudes of the demodulated signal. Are they the same with above?
+    Move the filter left and right, till you see that the filtered raw signal is different than the unfiltered one. Create a number of filtered signals based on the different filters. Demodulate the filtered signals and check the amplitudes of the demodulated signals. How different are they?
+    Do the same creating a pattern where the carrier has more than one sidebands left and right.
+
+ 
+
+Then:
+
+    If the filter is not centered and the bandwidth is not enough large, how are the picks of the demodulated signal influenced? How could somebody compensate the loss of the amplitude due to the filter?
+
+ 
+
+The goal of this investigation is to be sure that all of you are in the same page and that we have a validated script that gives the correct validated demodulated peaks. (in case the filter due to a gram is not correctly centered and it influences the amplitudes, how can we correct the loss and get the demodulated peaks with correct amplitudes?). The correct validated demodulated peaks will allow us calculate correctly diagnostic indicators.
+
+ 
+
+Thank you. I am looking forward receiving your analysis. Please plan and do that properly and soon.
+
+ 
+
+Kind regards
+
+ 
+
+Kostis
+
+* Expressions for modulation
+
+\begin{equation}
+\begin{aligned}
+s_c(t) &= A_c \cos(2\pi f_c t) \quad \text{carrier} \\
+s_m(t) &= A_m \cos(2\pi f_m t) \quad \text{modulating} \\
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+s(t) &= s_c(t) s_m(t) \quad \text{modulated} \\
+s(t) &= A_c A_m \cos(2\pi f_c t) \cos(2\pi f_m t) \\
+
+
+* Filter width will determine the bandwidth of the demodulated signal.
