@@ -48,7 +48,11 @@ class HilbertDemo(object):
         self.t = np.arange(0, self.t_duration, 1/self.fs)
 
         self.parameter_grid = {"f_carrier": {"min": 50, "max": 100, "step": 0.1, "id": "f_carrier", "value": 70},
-                                 "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "f_modulator", "value": 5}}
+                                 "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "f_modulator", "value": 5},
+                               "filter_center_freq_error": {"min": -10, "max": 10, "step": 0.1, "id": "filter_center_freq_error", "value": 0},
+                                 "filter_bandwidth": {"min": 0, "max": 20, "step": 0.1, "id": "filter_bandwidth", "value": 10}
+                               }
+
 
     def get_carrier(self, f_carrier):
         return np.cos(2*np.pi*f_carrier*self.t)
@@ -67,6 +71,11 @@ class HilbertDemo(object):
         freq = np.fft.rfftfreq(len(signal), 1/self.fs)
         return go.Scatter(x=freq, y=np.abs(spectrum), name=name) # Only show up to half of Nyquist frequency
 
+    def make_filter(self, center_freq, bandwidth):
+        b, a = signal.butter(4, [center_freq-bandwidth/2, center_freq+bandwidth/2], btype="bandpass", fs=self.fs)
+        return b, a
+
+
     def make_time_domain_signal_components_plot_at_state(self, f_carrier, f_modulator):
         fig = go.Figure()
         fig.add_trace(self.get_time_domain_trace(self.get_carrier(f_carrier), "Carrier"))
@@ -80,11 +89,18 @@ class HilbertDemo(object):
         fig.update_layout(xaxis_title="Time (s)", yaxis_title="Amplitude")
         return fig
 
-    def make_frequency_domain_signal_components_plot_at_state(self, f_carrier, f_modulator):
+    def make_frequency_domain_signal_components_plot_at_state(self, f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth):
         fig = go.Figure()
         fig.add_trace(self.get_frequency_domain_magnitude_trace(self.get_carrier(f_carrier), "Carrier"))
         fig.add_trace(self.get_frequency_domain_magnitude_trace(self.get_modulator(f_modulator), "Modulator"))
         fig.add_trace(self.get_frequency_domain_magnitude_trace(self.get_modulated(f_carrier, f_modulator), "Modulated"))
+
+        freqs = np.fft.rfftfreq(len(self.t), 1/self.fs) # Make this class attribute
+
+        # Show the filter frequency response
+        b, a = self.make_filter(f_carrier+filter_center_freq_error, filter_bandwidth)
+        w, h = signal.freqz(b, a, worN=freqs, fs=self.fs)
+        fig.add_trace(go.Scatter(x=freqs, y=np.abs(h), name="Filter"))
 
         # Add title
         fig.update_layout(title="Frequency domain signals")

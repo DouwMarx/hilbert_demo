@@ -31,10 +31,11 @@ app.layout = html.Div([
 )
 
 
+
 @app.callback(
     Output('time-series-components', 'figure'),
     Input(list(hd.parameter_grid.keys())[0], 'value'),
-    Input(list(hd.parameter_grid.keys())[1], 'value')
+    Input(list(hd.parameter_grid.keys())[1], 'value'),
     )
 def update_time_graph(slider1, slider2):
     # Plot a sine wave with varying frequency and amplitude
@@ -44,11 +45,13 @@ def update_time_graph(slider1, slider2):
 @app.callback(
     Output('frequency-response', 'figure'),
     Input(list(hd.parameter_grid.keys())[0], 'value'),
-    Input(list(hd.parameter_grid.keys())[1], 'value')
+    Input(list(hd.parameter_grid.keys())[1], 'value'),
+    Input(list(hd.parameter_grid.keys())[2], 'value'),
+    Input(list(hd.parameter_grid.keys())[3], 'value')
     )
-def update_freq_graph(slider1, slider2):
+def update_freq_graph(slider1, slider2, slider3, slider4):
     # Plot a sine wave with varying frequency and amplitude
-    fig = hd.make_frequency_domain_signal_components_plot_at_state(slider1, slider2)
+    fig = hd.make_frequency_domain_signal_components_plot_at_state(slider1, slider2, slider3, slider4)
     return fig
 
 if __name__ == '__main__':
