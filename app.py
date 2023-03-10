@@ -5,6 +5,7 @@ import plotly.express as px
 from discretized_modulation import HilbertDemo
 
 app = Dash(__name__)
+server = app.server
 
 hd = HilbertDemo()
 
