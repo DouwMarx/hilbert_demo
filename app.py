@@ -1,32 +1,31 @@
 import numpy as np
 from dash import Dash, dcc, html, Input, Output, State
-import plotly.express as px
 from discretized_modulation import HilbertDemo
 import dash_bootstrap_components as dbc
 
-app = Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 hd = HilbertDemo()
 
+
 def make_collapsable_graph(graph_id, graph_title):
     return html.Div(
-    [
-        dbc.Button(
-            graph_title,
-            id= graph_id + "-collapse-button",
-            className="mb-3",
-            color="primary",
-            n_clicks=0,
-        ),
-        dbc.Collapse(
-            dcc.Graph(id=graph_id),
-            id=graph_id + "-collapse",
-            is_open=True,
-        ),
-    ]
-)
-
+        [
+            dbc.Button(
+                graph_title,
+                id=graph_id + "-collapse-button",
+                className="mb-3",
+                color="primary",
+                n_clicks=0,
+            ),
+            dbc.Collapse(
+                dcc.Graph(id=graph_id),
+                id=graph_id + "-collapse",
+                is_open=True,
+            ),
+        ]
+    )
 
 
 def make_slider_and_label_from_dict(slider_dict):
@@ -41,15 +40,22 @@ def make_slider_and_label_from_dict(slider_dict):
     label = html.Label(slider_dict['id'])
     return html.Div([label, slider])
 
+
 sliders = [make_slider_and_label_from_dict(slider_dict) for slider_dict in hd.parameter_grid.values()]
 
+markdown_file = open("text.md")
+
+
 app.layout = html.Div([
-    html.Div( sliders + [
-    make_collapsable_graph('time-series-components', 'Time Series Components'),
-    make_collapsable_graph('frequency-response', 'Frequency Response'),
-    make_collapsable_graph('hilbert-time-response', 'Hilbert Time Series'),
-    ]
-    )]
+    html.Div(sliders +
+             [
+                 make_collapsable_graph('time-series-components', 'Time Series Components'),
+        make_collapsable_graph('frequency-response', 'Frequency Response'),
+        make_collapsable_graph('hilbert-time-response', 'Hilbert Time Series'),
+        make_collapsable_graph('recovered-modulating-frequency-response', 'Recovered Modulating Frequency Response'),
+                 dcc.Markdown(markdown_file.read(), mathjax=True),
+             ]
+             )]
 )
 
 
@@ -58,18 +64,21 @@ app.layout = html.Div([
     [Output('time-series-components', 'figure'),
      Output('frequency-response', 'figure'),
      Output('hilbert-time-response', 'figure')],
+    Output('recovered-modulating-frequency-response', 'figure'),
     [Input(slider_dict['id'], 'value') for slider_dict in hd.parameter_grid.values()]
 )
-def update_plots(f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth):
-    hd.update_state(f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth)
+def update_plots(*args):
+    hd.update_state(*args)
     time_series_components = hd.make_time_domain_signal_components_plot()
     frequency_response = hd.make_frequency_domain_signal_components_plot()
     hilbert_time_response = hd.make_processed_time_series_plot()
-    return time_series_components, frequency_response, hilbert_time_response
+    recovered_modulating_frequency_response = hd.make_processed_frequency_domain_plot()
+
+    return time_series_components, frequency_response, hilbert_time_response, recovered_modulating_frequency_response
 
 
 # Make the callbacks for collapsing the plots
-for graph_id in ['time-series-components', 'frequency-response', 'hilbert-time-response']:
+for graph_id in ['time-series-components', 'frequency-response', 'hilbert-time-response','recovered-modulating-frequency-response']:
     @app.callback(
         Output(graph_id + "-collapse", "is_open"),
         Input(graph_id + "-collapse-button", "n_clicks"),
@@ -79,9 +88,6 @@ for graph_id in ['time-series-components', 'frequency-response', 'hilbert-time-r
         if n:
             return not is_open
         return is_open
-
-
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
