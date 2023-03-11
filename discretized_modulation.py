@@ -1,4 +1,5 @@
 import plotly.io as pio
+
 pio.renderers.default = "browser"
 import numpy as np
 import scipy.signal as signal
@@ -41,46 +42,84 @@ from plotly.subplots import make_subplots
 # Plot the time domain signals using plotly
 import plotly.graph_objects as go
 
+
 class HilbertDemo(object):
-    def __init__(self,fs=1000,t_duration=1):
+    def __init__(self, fs=1000, t_duration=1):
         self.fs = fs
         self.t_duration = t_duration
-        self.t = np.arange(0, self.t_duration, 1/self.fs)
+        self.t = np.arange(0, self.t_duration, 1 / self.fs)
+        self.freq_range = np.fft.rfftfreq(len(self.t), 1 / self.fs)
 
         self.parameter_grid = {"f_carrier": {"min": 50, "max": 100, "step": 0.1, "id": "f_carrier", "value": 70},
-                                 "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "f_modulator", "value": 5},
-                               "filter_center_freq_error": {"min": -10, "max": 10, "step": 0.1, "id": "filter_center_freq_error", "value": 0},
-                                 "filter_bandwidth": {"min": 0, "max": 20, "step": 0.1, "id": "filter_bandwidth", "value": 10}
+                               "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "f_modulator", "value": 7},
+                               "filter_center_freq_error": {"min": -10, "max": 10, "step": 0.1,
+                                                            "id": "filter_center_freq_error", "value": 0},
+                               "filter_bandwidth": {"min": 0, "max": 20, "step": 0.1, "id": "filter_bandwidth",
+                                                    "value": 10}
                                }
 
+        # Set the initial state
+        self.update_state(self.parameter_grid["f_carrier"]["value"], self.parameter_grid["f_modulator"]["value"],
+                          self.parameter_grid["filter_center_freq_error"]["value"],
+                          self.parameter_grid["filter_bandwidth"]["value"])
 
-    def get_carrier(self, f_carrier):
-        return np.cos(2*np.pi*f_carrier*self.t)
+    def update_state(self, f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth):
+        # Set the parameters
+        self.f_carrier = f_carrier
+        self.f_modulator = f_modulator
+        self.filter_center_freq_error = filter_center_freq_error
+        self.filter_bandwidth = filter_bandwidth
 
-    def get_modulator(self, f_modulator): # TODO: Make for arbitrary bandwith
-        return np.cos(2*np.pi*f_modulator*self.t)
+        # Set the time domain signals
+        self.time_domain_carrier = self.get_carrier()
+        self.time_domain_modulator = self.get_modulator()
+        self.time_domain_modulated = self.get_modulated(self.time_domain_carrier, self.time_domain_modulator)
 
-    def get_modulated(self, f_carrier, f_modulator):
-        return self.get_carrier(f_carrier) * self.get_modulator(f_modulator)
+        # Set the frequency domain signals
+        self.frequency_domain_carrier = np.fft.rfft(self.time_domain_carrier) / len(self.time_domain_carrier)
+        self.frequency_domain_modulator = np.fft.rfft(self.time_domain_modulator) / len(self.time_domain_modulator)
+        self.frequency_domain_modulated = np.fft.rfft(self.time_domain_modulated) / len(self.time_domain_modulated)
 
-    def get_time_domain_trace(self, signal, name):
-        return go.Scatter(x=self.t, y=signal, name=name)
+        # Define the filter
+        self.filter_coefficients = self.make_filter(self.f_carrier + self.filter_center_freq_error,
+                                                    self.filter_bandwidth)
 
-    def get_frequency_domain_magnitude_trace(self, signal, name):
-        spectrum = np.fft.rfft(signal)/len(signal)
-        freq = np.fft.rfftfreq(len(signal), 1/self.fs)
-        return go.Scatter(x=freq, y=np.abs(spectrum), name=name) # Only show up to half of Nyquist frequency
+        # Get the hilbert transform of the filtered and unfiltered signals
+        self.time_domain_modulated_filtered = signal.filtfilt(*self.filter_coefficients, self.time_domain_modulated)
+        self.time_domain_modulated_filtered_hilbert = self.get_hibert_transform(self.time_domain_modulated_filtered)
+
+        self.time_domain_modulated_unfiltered_hilbert = self.get_hibert_transform(self.time_domain_modulated)
+
+    def get_carrier(self):
+        return np.cos(2 * np.pi * self.f_carrier * self.t)
+
+    def get_modulator(self):  # TODO: Make for arbitrary bandwith
+        return np.cos(2 * np.pi * self.f_modulator * self.t)
 
     def make_filter(self, center_freq, bandwidth):
-        b, a = signal.butter(4, [center_freq-bandwidth/2, center_freq+bandwidth/2], btype="bandpass", fs=self.fs)
+        b, a = signal.butter(4, [center_freq - bandwidth / 2, center_freq + bandwidth / 2], btype="bandpass",
+                             fs=self.fs)
         return b, a
 
+    @staticmethod
+    def get_modulated(carrier, modulator):
+        return carrier * modulator
 
-    def make_time_domain_signal_components_plot_at_state(self, f_carrier, f_modulator):
+    @staticmethod
+    def get_hibert_transform(sig):
+        return signal.hilbert(sig)
+
+    def make_time_domain_trace(self, signal, name):
+        return go.Scatter(x=self.t, y=signal, name=name)
+
+    def make_frequency_domain_magnitude_trace(self, complex_spectrum, name):
+        return go.Scatter(x=self.freq_range, y=np.abs(complex_spectrum), name=name)
+
+    def make_time_domain_signal_components_plot(self):
         fig = go.Figure()
-        fig.add_trace(self.get_time_domain_trace(self.get_carrier(f_carrier), "Carrier"))
-        fig.add_trace(self.get_time_domain_trace(self.get_modulator(f_modulator), "Modulator"))
-        fig.add_trace(self.get_time_domain_trace(self.get_modulated(f_carrier, f_modulator), "Modulated"))
+        fig.add_trace( self.make_time_domain_trace(self.time_domain_carrier, "Carrier"))
+        fig.add_trace(self.make_time_domain_trace(self.time_domain_modulator, "Modulating"))
+        fig.add_trace(self.make_time_domain_trace(self.time_domain_modulated, "Modulated"))
 
         # Add title
         fig.update_layout(title="Time domain signals")
@@ -89,18 +128,16 @@ class HilbertDemo(object):
         fig.update_layout(xaxis_title="Time (s)", yaxis_title="Amplitude")
         return fig
 
-    def make_frequency_domain_signal_components_plot_at_state(self, f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth):
+    def make_frequency_domain_signal_components_plot(self):
         fig = go.Figure()
-        fig.add_trace(self.get_frequency_domain_magnitude_trace(self.get_carrier(f_carrier), "Carrier"))
-        fig.add_trace(self.get_frequency_domain_magnitude_trace(self.get_modulator(f_modulator), "Modulator"))
-        fig.add_trace(self.get_frequency_domain_magnitude_trace(self.get_modulated(f_carrier, f_modulator), "Modulated"))
+        # Show the respective frequency domain signals
+        fig.add_trace(self.make_frequency_domain_magnitude_trace(self.frequency_domain_carrier, "Carrier"))
+        fig.add_trace(self.make_frequency_domain_magnitude_trace(self.frequency_domain_modulator, "Modulating"))
+        fig.add_trace(self.make_frequency_domain_magnitude_trace(self.frequency_domain_modulated, "Modulated"))
 
-        freqs = np.fft.rfftfreq(len(self.t), 1/self.fs) # Make this class attribute
-
-        # Show the filter frequency response
-        b, a = self.make_filter(f_carrier+filter_center_freq_error, filter_bandwidth)
-        w, h = signal.freqz(b, a, worN=freqs, fs=self.fs)
-        fig.add_trace(go.Scatter(x=freqs, y=np.abs(h), name="Filter"))
+        # Show the frequency response of the filter
+        w, h = signal.freqz(*self.filter_coefficients, worN=self.freq_range, fs=self.fs)
+        fig.add_trace(self.make_frequency_domain_magnitude_trace(h, "Filter"))
 
         # Add title
         fig.update_layout(title="Frequency domain signals")
@@ -109,43 +146,19 @@ class HilbertDemo(object):
         fig.update_layout(xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
         return fig
 
-# hd = HilbertDemo()
-# hd.make_signal_components_plot_at_state(50, 5).show()
+    def make_processed_time_series_plot(self):
+        fig = go.Figure()
 
-# fig = go.Figure()
-# fig.add_trace(go.Scatter(x=t, y=carrier_time, name="Carrier"))
-# fig.add_trace(go.Scatter(x=t, y=modulator_time, name="Modulator"))
-# fig.add_trace(go.Scatter(x=t, y=modulated_time, name="Modulated"))
-# fig.show()
-#
-# # Plot the amplitude and phase of the frequency domain signals as subplots side by side
-# freq_fig = make_subplots(rows=2, cols=1, subplot_titles=("Magnitude", "Phase"))
-#
-# freq_fig.add_trace(go.Scatter(x=fft_freq, y=np.abs(carrier_freq), name="Carrier"), row=1, col=1)
-# freq_fig.add_trace(go.Scatter(x=fft_freq, y=np.abs(modulator_freq), name="Modulator"), row=1, col=1)
-# freq_fig.add_trace(go.Scatter(x=fft_freq, y=np.abs(modulated_freq), name="Modulated"), row=1, col=1)
-#
-# freq_fig.add_trace(go.Scatter(x=fft_freq, y=np.angle(carrier_freq), name="Carrier"), row=2, col=1)
-# freq_fig.add_trace(go.Scatter(x=fft_freq, y=np.angle(modulator_freq), name="Modulator"), row=2, col=1)
-# freq_fig.add_trace(go.Scatter(x=fft_freq, y=np.angle(modulated_freq), name="Modulated"), row=2, col=1)
-# freq_fig.show()
-#
-#
-# # Plot the frequency representation of the amplitude of the modulating signal and the filtered signal
-# filter_fig = go.Figure()
-# filter_fig.add_trace(go.Scatter(x=fft_freq, y=np.abs(modulator_freq), name="Modulator"))
-# filter_fig.add_trace(go.Scatter(x=fft_freq, y=np.abs(filtered_freq), name="Filtered"))
-# filter_fig.show()
-#
-#
+        # Show original modulated time series and its analytical envelope
+        fig.add_trace(self.make_time_domain_trace(self.time_domain_modulated, "Modulated signal"))
+        fig.add_trace(self.make_time_domain_trace(np.abs(self.time_domain_modulated_unfiltered_hilbert),
+                                                  "Unfiltered analytical \n signal magnitude"))
 
+        # Show filtered modulated time series and its analytical envelope
+        fig.add_trace(self.make_time_domain_trace(self.time_domain_modulated_filtered, "Filtered modulated signal"))
+        fig.add_trace(self.make_time_domain_trace(np.abs(self.time_domain_modulated_filtered_hilbert),
+                                                  "Filtered analytical \n signal magnitude"))
 
-
-
-
-
-
-
-
-
-
+        fig.update_layout(title="Filtered and unfiltered signal envelopes")
+        fig.update_layout(xaxis_title="Time (s)", yaxis_title="Amplitude")
+        return fig

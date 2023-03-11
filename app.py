@@ -1,13 +1,33 @@
 import numpy as np
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
 import plotly.express as px
-
 from discretized_modulation import HilbertDemo
+import dash_bootstrap_components as dbc
 
-app = Dash(__name__)
+app = Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 hd = HilbertDemo()
+
+def make_collapsable_graph(graph_id, graph_title):
+    return html.Div(
+    [
+        dbc.Button(
+            graph_title,
+            id= graph_id + "-collapse-button",
+            className="mb-3",
+            color="primary",
+            n_clicks=0,
+        ),
+        dbc.Collapse(
+            dcc.Graph(id=graph_id),
+            id=graph_id + "-collapse",
+            is_open=True,
+        ),
+    ]
+)
+
+
 
 def make_slider_and_label_from_dict(slider_dict):
     slider = dcc.Slider(
@@ -25,35 +45,43 @@ sliders = [make_slider_and_label_from_dict(slider_dict) for slider_dict in hd.pa
 
 app.layout = html.Div([
     html.Div( sliders + [
-    dcc.Graph(id='time-series-components'),
-    dcc.Graph(id='frequency-response'),
+    make_collapsable_graph('time-series-components', 'Time Series Components'),
+    make_collapsable_graph('frequency-response', 'Frequency Response'),
+    make_collapsable_graph('hilbert-time-response', 'Hilbert Time Series'),
     ]
     )]
 )
 
 
-
+# Add a callback for updating all plots using the sliders
 @app.callback(
-    Output('time-series-components', 'figure'),
-    Input(list(hd.parameter_grid.keys())[0], 'value'),
-    Input(list(hd.parameter_grid.keys())[1], 'value'),
-    )
-def update_time_graph(slider1, slider2):
-    # Plot a sine wave with varying frequency and amplitude
-    fig = hd.make_time_domain_signal_components_plot_at_state(slider1, slider2)
-    return fig
+    [Output('time-series-components', 'figure'),
+     Output('frequency-response', 'figure'),
+     Output('hilbert-time-response', 'figure')],
+    [Input(slider_dict['id'], 'value') for slider_dict in hd.parameter_grid.values()]
+)
+def update_plots(f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth):
+    hd.update_state(f_carrier, f_modulator, filter_center_freq_error, filter_bandwidth)
+    time_series_components = hd.make_time_domain_signal_components_plot()
+    frequency_response = hd.make_frequency_domain_signal_components_plot()
+    hilbert_time_response = hd.make_processed_time_series_plot()
+    return time_series_components, frequency_response, hilbert_time_response
 
-@app.callback(
-    Output('frequency-response', 'figure'),
-    Input(list(hd.parameter_grid.keys())[0], 'value'),
-    Input(list(hd.parameter_grid.keys())[1], 'value'),
-    Input(list(hd.parameter_grid.keys())[2], 'value'),
-    Input(list(hd.parameter_grid.keys())[3], 'value')
+
+# Make the callbacks for collapsing the plots
+for graph_id in ['time-series-components', 'frequency-response', 'hilbert-time-response']:
+    @app.callback(
+        Output(graph_id + "-collapse", "is_open"),
+        Input(graph_id + "-collapse-button", "n_clicks"),
+        State(graph_id + "-collapse", "is_open"),
     )
-def update_freq_graph(slider1, slider2, slider3, slider4):
-    # Plot a sine wave with varying frequency and amplitude
-    fig = hd.make_frequency_domain_signal_components_plot_at_state(slider1, slider2, slider3, slider4)
-    return fig
+    def toggle_collapse(n, is_open):
+        if n:
+            return not is_open
+        return is_open
+
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
