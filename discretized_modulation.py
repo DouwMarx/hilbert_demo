@@ -50,19 +50,19 @@ class HilbertDemo(object):
         self.t = np.arange(0, self.t_duration, 1 / self.fs)
         self.freq_range = np.fft.rfftfreq(len(self.t), 1 / self.fs)
 
-        self.parameter_grid = {"f_carrier": {"min": 50, "max": 100, "step": 0.1, "id": "f_carrier", "value": 70},
-                               "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "f_modulator", "value": 7},
+        self.parameter_grid = {"f_carrier": {"min": 50, "max": 100, "step": 0.1, "id": "Carrier Frequency [Hz]", "value": 70},
+                               "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "Modulator Frequency [Hz] (Center frequency if multiple components) ", "value": 7},
                                "filter_center_freq_error": {"min": -10, "max": 10, "step": 0.1,
-                                                            "id": "filter_center_freq_error", "value": 0},
-                               "filter_bandwidth": {"min": 1, "max": 30, "step": 0.1, "id": "filter_bandwidth",
+                                                            "id": "Filter Center Frequency Discrepancy From Carrier Frequency [Hz]", "value": 0},
+                               "filter_bandwidth": {"min": 1, "max": 30, "step": 0.1, "id": "Filter Bandwidth [Hz]",
                                                     "value": 10},
                                "amplitude_sensitivity": {"min": 0.1, "max": 1, "step": 0.1,
-                                                         "id": "amplitude_sensitivity",
+                                                         "id": "Amplitude Sensitivity (M/A)",
                                                          "value": 0.6},
                                "number_of_modulator_components": {"min": 1, "max": 10, "step": 1,
-                                                                  "id": "number_of_modulator_components",
+                                                                  "id": "Number of modulator signal components",
                                                                   "value": 1},
-                               "modulator_bandwidth": {"min": 0.1, "max": 20, "step": 0.1, "id": "modulator_bandwidth",
+                               "modulator_bandwidth": {"min": 0.1, "max": 20, "step": 0.1, "id": "Bandwidth of modulator components [Hz]",
                                                        "value": 10},
                                }
 
