@@ -1,6 +1,6 @@
 import numpy as np
 from dash import Dash, dcc, html, Input, Output, State
-from discretized_modulation import HilbertDemo
+from source import HilbertDemo
 import dash_bootstrap_components as dbc
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -49,10 +49,10 @@ markdown_file = open("text.md")
 app.layout = html.Div([
     html.Div(sliders +
              [
-                 make_collapsable_graph('time-series-components', 'Time Series Components'),
-        make_collapsable_graph('frequency-response', 'Frequency Response'),
-        make_collapsable_graph('hilbert-time-response', 'Hilbert Time Series'),
-        make_collapsable_graph('recovered-modulating-frequency-response', 'Recovered Modulating Frequency Response'),
+                 make_collapsable_graph('time-series-components', 'Time Series of Signal Components and Modulated Signal'),
+        make_collapsable_graph('frequency-response', 'Frequency Response of Signal Components and Modulated Signal'),
+        make_collapsable_graph('hilbert-time-response', 'Filtered and Unfiltered Signal Envelopes'),
+        make_collapsable_graph('recovered-modulating-frequency-response', 'Frequency Response of Recovered and True Modulating Signal (DC Component Removed)    '),
                  dcc.Markdown(markdown_file.read(), mathjax=True),
              ]
              )]

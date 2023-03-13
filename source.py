@@ -1,47 +1,6 @@
-import plotly.io as pio
-
-pio.renderers.default = "browser"
 import numpy as np
 import scipy.signal as signal
-from plotly.subplots import make_subplots
-
-# fs = 5000 # Sampling frequency
-# fc = 100 # Carrier frequency
-# fm = 10 # Modulation frequency
-#
-# t = np.arange(0, 1, 1/fs) # Time vector
-#
-# carrier_time = np.cos(2*np.pi*fc*t)
-#
-# # Create a modulating signal
-# modulator_time = np.cos(2*np.pi*fm*t)
-#
-# # Modulate the carrier
-# modulated_time = carrier_time * modulator_time # This is just element-wise multiplication
-#
-# # Get the hilbert transform of the modulated signal
-# hilbert = signal.hilbert(modulated_time)
-#
-# # get the frequency representations
-# carrier_freq = np.fft.fft(carrier_time)/len(carrier_time)
-# modulator_freq = np.fft.fft(modulator_time)/len(modulator_time)
-# modulated_freq = np.fft.fft(modulated_time)/len(modulated_time)
-# fft_freq = np.fft.fftfreq(len(carrier_time), 1/fs)
-#
-# # Create a filter
-# center_freq = 100
-# bandwidth = 30
-# b, a = signal.butter(4, [center_freq-bandwidth/2, center_freq+bandwidth/2], btype="bandpass", fs=fs)
-#
-# # Filter the modulated signal
-# filtered_time = signal.filtfilt(b, a, modulated_time)
-#
-# # Get the frequency representation of the filtered signal
-# filtered_freq = np.fft.fft(filtered_time)/len(filtered_time)
-
-# Plot the time domain signals using plotly
 import plotly.graph_objects as go
-
 
 class HilbertDemo(object):
     def __init__(self, fs=1000, t_duration=1):
@@ -51,7 +10,7 @@ class HilbertDemo(object):
         self.freq_range = np.fft.rfftfreq(len(self.t), 1 / self.fs)
 
         self.parameter_grid = {"f_carrier": {"min": 50, "max": 100, "step": 0.1, "id": "Carrier Frequency [Hz]", "value": 70},
-                               "f_modulator": {"min": 5, "max": 10, "step": 0.1, "id": "Modulator Frequency [Hz] (Center frequency if multiple components) ", "value": 7},
+                               "f_modulator": {"min": 5, "max": 15, "step": 0.1, "id": "Modulator Frequency [Hz] (Center frequency if multiple components) ", "value": 7},
                                "filter_center_freq_error": {"min": -10, "max": 10, "step": 0.1,
                                                             "id": "Filter Center Frequency Discrepancy From Carrier Frequency [Hz]", "value": 0},
                                "filter_bandwidth": {"min": 1, "max": 30, "step": 0.1, "id": "Filter Bandwidth [Hz]",
@@ -178,11 +137,20 @@ class HilbertDemo(object):
         fig.add_trace(self.make_time_domain_trace(self.time_domain_modulator, "Modulating"))
         fig.add_trace(self.make_time_domain_trace(self.time_domain_modulated, "Modulated"))
 
-        # Add title
-        fig.update_layout(title="Time domain signals")
+        # # Add title
+        # fig.update_layout(title="Time domain signals")
 
         # Add the axis labels
         fig.update_layout(xaxis_title="Time (s)", yaxis_title="Amplitude")
+
+        # Add the legend on top of figure
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
         return fig
 
     def make_frequency_domain_signal_components_plot(self):
@@ -196,11 +164,20 @@ class HilbertDemo(object):
         w, h = signal.freqz(*self.filter_coefficients, worN=self.freq_range, fs=self.fs)
         fig.add_trace(self.make_frequency_domain_magnitude_trace(h, "Filter"))
 
-        # Add title
-        fig.update_layout(title="Frequency domain signals")
+        # # Add title
+        # fig.update_layout(title="Frequency domain signals")
 
         # Add the axis labels
         fig.update_layout(xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
+
+        # Put the legend on top of the plot
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
         return fig
 
     def make_processed_time_series_plot(self):
@@ -209,15 +186,24 @@ class HilbertDemo(object):
         # Show original modulated time series and its analytical envelope
         fig.add_trace(self.make_time_domain_trace(self.time_domain_modulated, "Modulated signal"))
         fig.add_trace(self.make_time_domain_trace(np.abs(self.time_domain_modulated_unfiltered_analytical),
-                                                  "Unfiltered analytical \n signal magnitude"))
+                                                  "Unfiltered analytical signal magnitude"))
 
         # Show filtered modulated time series and its analytical envelope
         fig.add_trace(self.make_time_domain_trace(self.time_domain_modulated_filtered, "Filtered modulated signal"))
         fig.add_trace(self.make_time_domain_trace(np.abs(self.time_domain_modulated_filtered_analytical),
-                                                  "Filtered analytical \n signal magnitude"))
+                                                  "Filtered analytical signal magnitude"))
 
-        fig.update_layout(title="Filtered and unfiltered signal envelopes")
+        # fig.update_layout(title="Filtered and unfiltered signal envelopes")
         fig.update_layout(xaxis_title="Time (s)", yaxis_title="Amplitude")
+
+        # Put the legend on top of the plot
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
         return fig
 
     def make_processed_frequency_domain_plot(self):
@@ -234,11 +220,19 @@ class HilbertDemo(object):
             self.make_frequency_domain_magnitude_trace(self.frequency_domain_modulated_unfiltered_analytical_magnitude,
                                                        "Unfiltered recovered \n modulating signal"))
 
-        fig.update_layout(
-            title="Frequency domain of the true modulating signal and the recovered signals (DC gain not included)")
+        # fig.update_layout(
+        #     title="Frequency domain of the true modulating signal and the recovered signals (DC gain not included)")
         fig.update_layout(xaxis_title="Frequency (Hz)",
                           yaxis_title="Amplitude",
                           xaxis_range=[1, 4 * self.parameter_grid["f_modulator"][
                               "max"]])  # set range up to 4 times modulating freq
 
+        # Put the legend on top of the plot
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
         return fig
