@@ -1,5 +1,6 @@
 
-Demo that shows amplitude modulation and demodulation using the Hilbert transform.
+Demo of amplitude modulation and demodulation using the Hilbert transform.
 
-Demo available here:
-https://hilbert-demo.herokuapp.com/
+Dash app with live updates as carrier frequency, modulation frequency, etc. is changed.
+
+Previously hosted on Heroku: https://hilbert-demo.herokuapp.com/
